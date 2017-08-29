@@ -67,9 +67,14 @@ void Renderer::Impl::setObserver(RendererObserver* observer_) {
 }
 
 void Renderer::Impl::render(const UpdateParameters& updateParameters) {
-    // Don't load/render anyting in still mode until explicitly requested.
-    if (updateParameters.mode == MapMode::Still && !updateParameters.stillImageRequest) return;
-    
+    // Avoid redundant render calls in still mode if:
+    // - It has not been explicitly requested (no still image request); or
+    // - Style is not loaded yet
+    if (updateParameters.mode == MapMode::Still
+            && (!updateParameters.stillImageRequest || !updateParameters.styleLoaded)) {
+        return;
+    }
+
     assert(BackendScope::exists());
 
     const bool zoomChanged = zoomHistory.update(updateParameters.transformState.getZoom(), updateParameters.timePoint);

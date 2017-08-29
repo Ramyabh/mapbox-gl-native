@@ -687,13 +687,21 @@ void Map::Impl::onInvalidate() {
 }
 
 void Map::Impl::onUpdate(Update flags) {
-    TimePoint timePoint = mode == MapMode::Continuous ? Clock::now() : Clock::time_point::max();
-
-    transform.updateTransitions(timePoint);
-
     if (flags & Update::AnnotationData) {
         annotationManager.updateData();
     }
+
+    // Avoid redundant update calls in still mode if:
+    // - It has not been explicitly requested (no still image request); or
+    // - Style is not loaded yet
+    if (mode == MapMode::Still
+            && (!stillImageRequest || !style->impl->isLoaded())) {
+        return;
+    }
+
+    TimePoint timePoint = mode == MapMode::Continuous ? Clock::now() : Clock::time_point::max();
+
+    transform.updateTransitions(timePoint);
 
     UpdateParameters params = {
         style->impl->isLoaded(),
